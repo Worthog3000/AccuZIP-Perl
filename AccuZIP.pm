@@ -4,6 +4,12 @@ require Exporter;
 our @ISA	= qw( Exporter );
 our @EXPORT	= qw(
 			accuzip_upload
+			accuzip_status
+			accuzip_cass
+			accuzip_ncoa
+			accuzip_mail
+			accuzip_cass_presort
+			accuzip_cass_ncoa_presort
 		    );
 
 use strict;
@@ -20,15 +26,7 @@ my $api_key = '7CD54237-2D50-4D05-8E6A-0D5DC89CFAE7';
 my %URLS    = (
     upload	=> 'https://cloud2.iaccutrace.com/ws_360_webapps/v2_0/uploadProcess.jsp?manual_submit=false',
     process 	=> 'https://cloud2.iaccutrace.com/servoy-service/rest_ws/ws_360/v2_0/job',
-    #quote 	=> 'https://cloud2.iaccutrace.com/servoy-service/rest_ws/ws_360/v2_0/job/#GUID#/QUOTE',
-    #cass	=> 'https://cloud2.iaccutrace.com/servoy-service/rest_ws/ws_360/v2_0/job/#GUID#/CASS',
-    #ncoa	=> 'https://cloud2.iaccutrace.com/servoy-service/rest_ws/ws_360/v2_0/job/#GUID#/NCOA',
-    #presort	=> 'https://cloud2.iaccutrace.com/servoy-service/rest_ws/ws_360/v2_0/job/#GUID#/PRESORT',
     callback	=> 'http://cirrus.ega.com/getAccuZIPcallback',
-    #cass_ncoa_presort	
-    #		=> 'https://cloud2.iaccutrace.com/servoy-service/rest_ws/ws_360/v2_0/job/#GUID#/CASS-NCOA-PRESORT',
-    #cass_presort	
-    #		=> 'https://cloud2.iaccutrace.com/servoy-service/rest_ws/ws_360/v2_0/job/#GUID#/CASS-PRESORT',
     );
 
 # DEFAULTS
@@ -38,10 +36,11 @@ my @mailing_agent   = (
     '2700 Bell Ave', 
     'Des Moines, IA 50321' 
     );
+my $mailing_agent_phone	= '5156976503';
 
 my %DEFAULT = (
-    mailing_agent_phone			=> '5152809765',
-    agent_or_mailer_signing_statement	=> $mailing_agent[0]
+    mailing_agent_phone			=> $mailing_agent_phone,
+    agent_or_mailer_signing_statement	=> $mailing_agent[0],
     agent_or_mailer_company          	=> $mailing_agent[1],
     agent_or_mailer_phone          	=> $mailing_agent_phone,
 
