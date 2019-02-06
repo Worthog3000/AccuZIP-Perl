@@ -89,7 +89,7 @@ sub accuzip_price {
     # nunmber of records downloaded, reagrdless of
     # the service(s) requested.
     my $qty	= shift;
-    my $price	= '$0.00';
+    my $price	= '0.00';
 
     if ( $qty > @{ $PRICING[-1] }[1] ) {
 	carp "$qty exceeds the maximum available.";
@@ -98,7 +98,7 @@ sub accuzip_price {
 
     foreach my $tier ( @PRICING ) {
 	if ( $qty >= @{ $tier }[0] && $qty <= @{ $tier }[1] ) {
-	    $price  = sprintf "\$%2.2f", @{ $tier }[2];
+	    $price  = sprintf "%2.2f", @{ $tier }[2];
 	}
     }
     return $price;
@@ -283,6 +283,7 @@ sub accuzip_upload {
 
 sub accuzip_fetch_preview {
     my $guid	= shift;
+    print STDERR "WARNING: Downloading a preview file will only work if the job has been presorted.";
     
     my $type	= 'prev.csv';
     my $local	= 'preview.csv';
@@ -296,7 +297,7 @@ sub accuzip_fetch_preview {
 	croak "We have no Internet connection! :O";
     }
     $ua->show_progress( 1 );
-    
+
     my $resp    = $ua->get( $url );
     carp "Error getting status at $url: " . $resp->status_line
 	unless $resp->is_success;
@@ -309,6 +310,7 @@ sub accuzip_fetch_preview {
 }
 
  sub accuzip_fetch_csv {
+    # Returns a qty (int) and a price (float)
     my $guid	= shift;
     
     my $type	= 'csv';
@@ -324,13 +326,17 @@ sub accuzip_fetch_preview {
     }
     $ua->show_progress( 1 );
     
-    my $resp    = $ua->get( $url );
+    my $resp    = $ua->get( $url, ':content_file' => $local );
     carp "Error getting status at $url: " . $resp->status_line
 	unless $resp->is_success;
-    my $file	= $resp->decoded_content;
     
-    open my $fh, '>', $local
-	or croak "Can't create $local: $!";
-    print $fh $file;
+    my $count	= 0;
+    open my $fh, '<', $local
+	or croak "Can't open $local: $!";
+    $count++ while <$fh>;
     close $fh;
+    # Account for the header record
+    $count--;
+    my $price	= accuzip_price( $count );
+    return ( $count, $price );
 }
