@@ -314,7 +314,7 @@ sub accuzip_fetch_preview {
     my $guid	= shift;
     
     my $type	= 'csv';
-    my $local	= 'AccuZIP_final_file.psv';
+    my $local	= 'AccuZIP_final_file.csv';
 
     my $url	= $URLS{ download };
     $url	=~ s{#GUID#}{$guid};
