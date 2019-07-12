@@ -18,7 +18,7 @@ use Term::ProgressBar;
 
 $|++;
 
-my $sleep   = 30;
+my $sleep   = 10;
 
 my $config_file	= 'mail.cfg';
 my $cass_only++;	# Default
@@ -26,6 +26,8 @@ my $cass_ncoa_only;
 my $cass_ncoa_presort; 
 my $cass_presort;
 my $eddm;
+my $dedup_indiv;
+my $dedup_addr;
 
 GetOptions( "config|cfg|c=s"		=> \$config_file,
 	    "C|CASS-only!"		=> \$cass_only,
@@ -33,6 +35,8 @@ GetOptions( "config|cfg|c=s"		=> \$config_file,
 	    "CP|CASS-PRESORT!"		=> \$cass_presort,
 	    "CNP|CASS-NCOA-PRESORT!"	=> \$cass_ncoa_presort,
 	    "eddm|E!"			=> \$eddm,
+	    "dedup-indiv|DI!"		=> \$dedup_indiv,
+	    "dedup-addr|DA!"		=> \$dedup_addr,
     );
 
 my $infile  = $ARGV[0];
@@ -84,15 +88,31 @@ if ( $eddm ) {
 say STDERR "Initiating CASS";
 accuzip_cass( $guid )
     or croak "CASS failed: $!";
-sleep 10;
+
+until ( accuzip_process_complete( $guid ) ) {
+    print STDERR "Process not complete. Sleeping for $sleep seconds...";
+    sleep $sleep;
+}
+
+if ( $dedup_indiv ) {
+    print STDERR "Running de-dup by individual...";
+    accuzip_dup_indiv( $guid );
+}
+elsif ( $dedup_addr ) {
+    print STDERR "Running de-dup by address only...";
+    accuzip_dup_addronly( $guid );
+}
 
 if ( $cass_ncoa_only || $cass_ncoa_presort ) {
     say STDERR "Initiating NCOA";
     accuzip_ncoa( $guid )
 	or croak "NCOA failed: $!";
-    sleep 10;
 }
 
+until ( accuzip_process_complete( $guid ) ) {
+    print STDERR "Process not complete. Sleeping for $sleep seconds...";
+    sleep $sleep;
+}
 
 if ( $cass_presort || $cass_ncoa_presort ) {
     read_config $config_file => my %CONFIG;
@@ -117,7 +137,6 @@ if ( $cass_presort || $cass_ncoa_presort ) {
     say STDERR "Initiating Presort";
     my $result = accuzip_presort( $guid );
     say STDERR $result;
-
 }
 
 #print STDERR accuzip_status( $gid );

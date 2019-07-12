@@ -5,6 +5,8 @@ our @ISA	= qw( Exporter );
 our @EXPORT	= qw(
 			accuzip_upload
 			accuzip_status
+			accuzip_process_complete
+			accuzip_eddm_status
 			accuzip_cass
 			accuzip_ncoa
 			accuzip_mailcfg
@@ -14,6 +16,10 @@ our @EXPORT	= qw(
 			accuzip_fetch_preview
 			accuzip_fetch_csv
 			accuzip_price
+			accuzip_dup_indiv
+			accuzip_dup_household
+			accuzip_dup_addronly
+
 		    );
 
 use strict;
@@ -118,6 +124,50 @@ sub accuzip_cass {
     return $CONTENT->{ success } || 0;
 }
 
+sub accuzip_dup_indiv {
+    my $guid	= shift;
+    my $url	= join '/', $URLS{ process }, $guid, 'DUPS', '02';
+    my $ua	= LWP::UserAgent->new;
+    if ( not $ua->is_online ) {
+	croak "We have no Internet connection! :O";
+    }
+    my $resp    = $ua->get( $url );
+    carp "Error getting status at $url: " . $resp->status_line
+	unless $resp->is_success;
+    my $CONTENT = decode_json( $resp->content );
+    return $CONTENT->{ success } || 0;
+}
+
+sub accuzip_dup_household {
+    my $guid	= shift;
+    my $url	= join '/', $URLS{ process }, $guid, 'DUPS', '03';
+    my $ua	= LWP::UserAgent->new;
+    if ( not $ua->is_online ) {
+	croak "We have no Internet connection! :O";
+    }
+    my $resp    = $ua->get( $url );
+    carp "Error getting status at $url: " . $resp->status_line
+	unless $resp->is_success;
+    my $CONTENT = decode_json( $resp->content );
+    return $CONTENT->{ success } || 0;
+}
+
+sub accuzip_dup_addronly {
+    my $guid	= shift;
+    my $url	= join '/', $URLS{ process }, $guid, 'DUPS', '01';
+    my $ua	= LWP::UserAgent->new;
+    if ( not $ua->is_online ) {
+	croak "We have no Internet connection! :O";
+    }
+    my $resp    = $ua->get( $url );
+    carp "Error getting status at $url: " . $resp->status_line
+	unless $resp->is_success;
+    my $CONTENT = decode_json( $resp->content );
+    return $CONTENT->{ success } || 0;
+}
+
+
+
 sub accuzip_ncoa {
     my $guid	= shift;
     my $url	= join '/', $URLS{ process }, $guid, 'NCOA';
@@ -187,7 +237,7 @@ sub accuzip_status {
     if ( not $ua->is_online ) {
 	croak "We have no Internet connection! :O";
     }
-    $ua->show_progress( 1 );
+    #$ua->show_progress( 1 );
     my $resp    = $ua->get( $url );
     carp "Error getting status at $url: " . $resp->status_line
 	unless $resp->is_success;
@@ -196,6 +246,34 @@ sub accuzip_status {
     my $count	= $CONTENT->{ total_records };
     my $task	= $CONTENT->{ task_name } || 'NO TASK RETURNED';
     return "$count records; Task: $task";
+}
+
+sub accuzip_process_complete {
+    my $guid	= shift;
+    if ( accuzip_status( $guid ) =~ m/FINISHED/ ) {
+	return 1;
+    }
+    else {
+	return 0;
+    }
+}
+
+sub accuzip_eddm_status {
+    my $guid	= shift;
+    my $url	= join '/', $URLS{ process }, $guid, 'QUOTE';
+    my $ua	= LWP::UserAgent->new;
+    if ( not $ua->is_online ) {
+	croak "We have no Internet connection! :O";
+    }
+    $ua->show_progress( 1 );
+    my $resp    = $ua->get( $url );
+    carp "Error getting status at $url: " . $resp->status_line
+	unless $resp->is_success;
+    my $CONTENT = decode_json( $resp->content );
+    #print Dumper $CONTENT;
+    my $count1	= $CONTENT->{ Total_Residential };
+    my $count2	= $CONTENT->{ Total_Possible };
+    return "$count1 Residential records; $count2 Possible records";
 }
 
 sub accuzip_mailcfg {
